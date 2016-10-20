@@ -24,31 +24,10 @@ config.svgSprite = {
     }
   }
 };
-//Конфиг вебпака
-const webpackOptions = {
-  entry: {
-    main: config.source + '/js/main.js'
-  },
-  output: {
-    filename: "bundle.js"
-  },
-  watch: false,
-  devtool: 'cheap-source-map',
-  module: {
-    loaders: [{
-      test: /\.js$/,
-      exclude: /node_modules/,
-      loader: 'babel-loader',
-      query: {
-        presets: ['es2015']
-      }
-    }]
-  }
-};
 
 const gulp = require('gulp');
 //Webpack и всё для js
-const webpack = require('gulp-webpack');
+const webpack = require('webpack-stream');
 const uglify = require('gulp-uglify');
 //Перехват ошибок
 const plumber = require('gulp-plumber');
@@ -71,12 +50,37 @@ const notify = require('gulp-notify');
 const autoprefixer = require('gulp-autoprefixer');
 //Автоматическая перезагрузка и синхронизация браузеров
 const browserSync = require('browser-sync').create();
+//Работа с путями
+const path = require('path');
 //Модуль для удаления файлов и папок
 const del = require('del');
 //Модуль для переименования файлов
 const rename = require('gulp-rename');
 
-gulp.task('webpack', function(callback) {
+//Конфиг вебпака
+const webpackOptions = {
+  entry: {
+    main: config.source + '/js/main.js'
+  },
+  output: {
+    filename: "bundle.js"
+  },
+  watch: false,
+  devtool: 'cheap-source-map',
+  module: {
+    loaders: [{
+      test: /\.js$/,
+      exclude: /node_modules/,
+      loader: 'babel-loader',
+      query: {
+        presets: ['es2015']
+      }
+    }]
+  }
+};
+
+//Таски
+gulp.task('webpack', function() {
   return gulp.src(config.source + '/js/main.js')
     .pipe(plumber({
       errorHandler: notify.onError(err => ({
@@ -85,20 +89,19 @@ gulp.task('webpack', function(callback) {
       }))
     }))
     .pipe(webpack(webpackOptions))
-    .pipe(gulpif(!isDevelopment, uglify()))
     .pipe(gulp.dest(config.build + '/assets/js'));
 });
 
-gulp.task('webpack:dev', function(callback) {
-  return gulp.src(config.source + '/js/main.js')
+gulp.task('uglify', function() {
+  return gulp.src(config.build + '/assets/js/bundle.js')
     .pipe(plumber({
       errorHandler: notify.onError(err => ({
-        title: 'Webpack',
+        title: 'Uglify',
         message: err.message
       }))
     }))
-    .pipe(webpack(webpackOptions))
-    .pipe(gulp.dest(config.build + '/assets/js'));
+    .pipe(uglify())
+    .pipe(gulp.dest(config.build + '/assets/js/'));
 });
 
 gulp.task('scss', function() {
@@ -158,7 +161,7 @@ gulp.task('assets:svg', function() {
 gulp.task('watch', function() {
   gulp.watch(config.source + '/templates/**/*.*', gulp.series('pug'));
   gulp.watch(config.source + '/styles/**/*.*', gulp.series('scss'));
-  gulp.watch(config.source + '/js/**/*.*', gulp.series('webpack:dev'));
+  gulp.watch(config.source + '/js/**/*.*', gulp.series('webpack'));
   gulp.watch(config.source + '/assets/img/**/*.*', gulp.series('assets:images'));
   gulp.watch(config.source + '/assets/svg/**/*.*', gulp.series('assets:svg'));
 });
@@ -178,7 +181,10 @@ gulp.task('build', gulp.series(
     'assets:svg',
     'assets:images'
   ),
-  'pug'
+  gulp.parallel(
+    'uglify',
+    'pug'
+  )
 ));
 
 gulp.task('default', gulp.series(
@@ -187,7 +193,7 @@ gulp.task('default', gulp.series(
     'scss',
     'assets:svg',
     'assets:images',
-    'webpack:dev'
+    'webpack'
   ),
   'pug',
   gulp.parallel(
