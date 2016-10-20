@@ -1,0 +1,29 @@
+@import 'modules/base';
+
+body {
+  margin: 0;
+}
+
+.container {
+  margin: auto;
+  width: 500px;
+}
+
+p {
+  position: relative;
+  color: #352630;
+  font-family: 'Algerian', sans-serif;
+  font-size: 40px;
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -50px;
+    left: -50px;
+    width: 100px;
+    height: 100px;
+    background: url(../img/1.jpg) no-repeat 0 0/cover;
+    border-radius: 50%;
+    border: 1px solid #000;
+    z-index: -1;
+  }
+}
